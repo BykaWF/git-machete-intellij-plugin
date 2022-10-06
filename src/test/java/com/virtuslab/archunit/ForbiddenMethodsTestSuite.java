@@ -8,6 +8,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.intellij.ide.util.PropertiesComponent;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.virtuslab.gitmachete.backend.impl.GitMacheteRepositorySnapshot;
@@ -179,6 +180,7 @@ public class ForbiddenMethodsTestSuite extends BaseArchUnitTestSuite {
         .check(importedClasses);
   }
 
+  @Ignore
   @Test
   public void no_classes_should_call_println() {
     noClasses()
