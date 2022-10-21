@@ -1,9 +1,8 @@
 package com.virtuslab.gitmachete.frontend.actions.toolbar;
 
-import java.util.List;
-
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import io.vavr.collection.List;
 import kr.pe.kwonnam.slf4jlambda.LambdaLogger;
 import lombok.CustomLog;
 import org.checkerframework.checker.guieffect.qual.UIEffect;
