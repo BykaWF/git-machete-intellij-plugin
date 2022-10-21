@@ -25,7 +25,7 @@ fun Project.configureIntellijPlugin() {
     instrumentCode.set(false)
     pluginName.set("git-machete-intellij-plugin")
     version.set(intellijVersions.buildTarget)
-    plugins.set(listOf("Git4Idea")) // Needed solely for ArchUnit
+    plugins.set(listOf("Git4Idea", "org.jetbrains.plugins.github")) // Needed solely for ArchUnit
   }
 
   if (!isCI) {
