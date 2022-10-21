@@ -2,36 +2,25 @@ package com.virtuslab.gitmachete.frontend.ui.impl.table;
 
 import static com.intellij.openapi.application.ModalityState.NON_MODAL;
 import static com.virtuslab.gitmachete.frontend.datakeys.DataKeys.typeSafeCase;
-import static com.virtuslab.gitmachete.frontend.defs.ActionIds.CHECK_OUT;
 import static com.virtuslab.gitmachete.frontend.defs.ActionIds.OPEN_MACHETE_FILE;
 import static com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle.getString;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 
-import java.awt.Point;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.function.Consumer;
 
-import javax.swing.JPopupMenu;
 import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.event.PopupMenuEvent;
 
 import com.intellij.ide.DataManager;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationType;
-import com.intellij.openapi.actionSystem.ActionGroup;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DataProvider;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
@@ -39,7 +28,10 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vcs.VcsNotifier;
 import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.ui.PopupMenuListenerAdapter;
+import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.openapi.vfs.newvfs.BulkFileListener;
+import com.intellij.openapi.vfs.newvfs.events.VFileContentChangeEvent;
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.ui.ScrollingUtil;
 import com.intellij.util.ModalityUiUtil;
 import com.intellij.util.messages.Topic;
@@ -47,6 +39,7 @@ import com.intellij.util.ui.JBUI;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryChangeListener;
 import io.vavr.collection.Set;
+import lombok.AccessLevel;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
@@ -64,9 +57,8 @@ import com.virtuslab.branchlayout.api.readwrite.IBranchLayoutWriter;
 import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositorySnapshot;
 import com.virtuslab.gitmachete.backend.api.NullGitMacheteRepositorySnapshot;
 import com.virtuslab.gitmachete.frontend.datakeys.DataKeys;
-import com.virtuslab.gitmachete.frontend.defs.ActionGroupIds;
 import com.virtuslab.gitmachete.frontend.defs.ActionPlaces;
-import com.virtuslab.gitmachete.frontend.graph.api.items.IGraphItem;
+import com.virtuslab.gitmachete.frontend.defs.FileTypeIds;
 import com.virtuslab.gitmachete.frontend.graph.api.repository.IRepositoryGraph;
 import com.virtuslab.gitmachete.frontend.graph.api.repository.IRepositoryGraphCache;
 import com.virtuslab.gitmachete.frontend.graph.api.repository.NullRepositoryGraph;
@@ -83,9 +75,8 @@ import com.virtuslab.qual.guieffect.UIThreadUnsafe;
 /**
  *  This class compared to {@link SimpleGraphTable} has graph table refreshing and provides
  *  data like last clicked branch name, opened project or {@link IGitMacheteRepositorySnapshot} of current
- *  repository for actions
+ *  repository for actions.
  */
-// TODO (#99): consider applying SpeedSearch for branches and commits
 @ExtensionMethod({GitMacheteBundle.class, GitVfsUtils.class})
 @CustomLog
 public final class EnhancedGraphTable extends BaseEnhancedGraphTable
@@ -108,6 +99,8 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
   @UIEffect
   private @Nullable IGitMacheteRepositorySnapshot gitMacheteRepositorySnapshot;
 
+  @Getter(AccessLevel.PACKAGE)
+  @Setter(AccessLevel.PACKAGE)
   @UIEffect
   private @Nullable String selectedBranchName;
 
@@ -147,10 +140,28 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
 
     subscribeToGitRepositoryFilesChanges();
     subscribeToSelectedGitRepositoryChange();
+    subscribeToMacheteFileChange();
   }
 
   private IGitRepositorySelectionProvider getGitRepositorySelectionProvider() {
     return project.getService(SelectedGitRepositoryProvider.class).getGitRepositorySelectionProvider();
+  }
+
+  private void subscribeToMacheteFileChange() {
+    val messageBusConnection = project.getMessageBus().connect();
+    messageBusConnection.subscribe(VirtualFileManager.VFS_CHANGES, new BulkFileListener() {
+      @Override
+      public void after(java.util.List<? extends VFileEvent> events) {
+        for (val event : events) {
+          if (event instanceof VFileContentChangeEvent) {
+            if (((VFileContentChangeEvent) event).getFile().getFileType().getName().equals(FileTypeIds.NAME)) {
+              queueRepositoryUpdateAndModelRefresh();
+            }
+          }
+        }
+      }
+    });
+    Disposer.register(project, messageBusConnection);
   }
 
   private void subscribeToGitRepositoryFilesChanges() {
@@ -162,7 +173,7 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
   }
 
   private void subscribeToSelectedGitRepositoryChange() {
-    // The method reference is invoked when user changes repository in selection component menu
+    // The method reference is invoked when user changes repository in the selection component menu
     val gitRepositorySelectionProvider = getGitRepositorySelectionProvider();
     gitRepositorySelectionProvider.addSelectionChangeObserver(() -> queueRepositoryUpdateAndModelRefresh());
   }
@@ -205,7 +216,7 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
 
     if (!isMacheteFilePresent) {
       LOG.info("Machete file (${macheteFilePath}) is absent, so auto discover is running");
-      // The `doOnUIThreadWhenReady` callback  must be executed once discover task is *complete*,
+      // The `doOnUIThreadWhenReady` callback must be executed once the discover task is *complete*,
       // and not just when the discover task is *enqueued*.
       // Otherwise, it'll most likely happen that the callback executes before the discover task is complete,
       // which is undesirable.
@@ -337,7 +348,7 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
   private void initColumns() {
     createDefaultColumnsFromModel();
 
-    // Otherwise sizes would be recalculated after each TableColumn re-initialization
+    // Otherwise, sizes would be recalculated after each TableColumn re-initialization
     setAutoCreateColumnsFromModel(false);
   }
 
@@ -392,101 +403,4 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
         Case($(), (Object) null));
   }
 
-  private static class EnhancedGraphTableMouseAdapter extends MouseAdapter {
-    private final EnhancedGraphTable graphTable;
-    private final EnhancedGraphTablePopupMenuListener popupMenuListener;
-
-    @UIEffect
-    EnhancedGraphTableMouseAdapter(EnhancedGraphTable graphTable) {
-      this.graphTable = graphTable;
-      this.popupMenuListener = new EnhancedGraphTablePopupMenuListener(graphTable);
-    }
-
-    @Override
-    @UIEffect
-    public void mouseClicked(MouseEvent e) {
-      Point point = e.getPoint();
-      int row = graphTable.rowAtPoint(point);
-      int col = graphTable.columnAtPoint(point);
-
-      // check if we click on one of branches
-      if (row < 0 || col < 0) {
-        return;
-      }
-
-      BranchOrCommitCell cell = (BranchOrCommitCell) graphTable.getModel().getValueAt(row, col);
-      IGraphItem graphItem = cell.getGraphItem();
-      if (!graphItem.isBranchItem()) {
-        return;
-      }
-
-      graphTable.selectedBranchName = graphItem.asBranchItem().getBranch().getName();
-      performActionAfterChecks(e, point);
-    }
-
-    @UIEffect
-    private void performActionAfterChecks(MouseEvent e, Point point) {
-      ActionManager actionManager = ActionManager.getInstance();
-      if (SwingUtilities.isRightMouseButton(e) || isCtrlClick(e)) {
-        ActionGroup contextMenuActionGroup = (ActionGroup) actionManager.getAction(ActionGroupIds.CONTEXT_MENU);
-        val actionPopupMenu = actionManager.createActionPopupMenu(ActionPlaces.CONTEXT_MENU, contextMenuActionGroup);
-        JPopupMenu popupMenu = actionPopupMenu.getComponent();
-        popupMenu.addPopupMenuListener(popupMenuListener);
-        popupMenu.show(graphTable, (int) point.getX(), (int) point.getY());
-      } else if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2 && !e.isConsumed()) {
-
-        val gitMacheteRepositorySnapshot = graphTable.gitMacheteRepositorySnapshot;
-        if (gitMacheteRepositorySnapshot != null) {
-          val currentBranchIfManaged = gitMacheteRepositorySnapshot
-              .getCurrentBranchIfManaged();
-          val isSelectedEqualToCurrent = currentBranchIfManaged != null
-              && currentBranchIfManaged.getName().equals(graphTable.selectedBranchName);
-          if (isSelectedEqualToCurrent) {
-            return;
-          }
-        }
-
-        e.consume();
-        DataContext dataContext = DataManager.getInstance().getDataContext(graphTable);
-        val actionEvent = AnActionEvent.createFromDataContext(ActionPlaces.CONTEXT_MENU, new Presentation(), dataContext);
-        actionManager.getAction(CHECK_OUT).actionPerformed(actionEvent);
-      }
-    }
-
-    // this method is needed as some macOS users use Ctrl + left-click as a replacement for the right-click
-    @UIEffect
-    private boolean isCtrlClick(MouseEvent e) {
-      return e.isControlDown() && SwingUtilities.isLeftMouseButton(e);
-    }
-  }
-
-  private static class EnhancedGraphTablePopupMenuListener extends PopupMenuListenerAdapter {
-    private final EnhancedGraphTable graphTable;
-
-    @UIEffect
-    EnhancedGraphTablePopupMenuListener(EnhancedGraphTable graphTable) {
-      this.graphTable = graphTable;
-    }
-
-    @Override
-    @UIEffect
-    public void popupMenuWillBecomeVisible(PopupMenuEvent popupMenuEvent) {
-      // This delay is needed to avoid `focus transfer` effect when at the beginning row selection is light blue
-      // but when context menu is created (in a fraction of second), selection loses focus to the context menu and becomes dark blue.
-      // TimerTask can't be replaced by lambda because it's not a SAM (single abstract method).
-      // For more details see https://stackoverflow.com/a/37970821/10116324
-      new Timer().schedule(new TimerTask() {
-        @Override
-        public void run() {
-          ModalityUiUtil.invokeLaterIfNeeded(NON_MODAL, () -> graphTable.setRowSelectionAllowed(true));
-        }
-      }, /* delay in ms */ 35);
-    }
-
-    @Override
-    @UIEffect
-    public void popupMenuWillBecomeInvisible(PopupMenuEvent popupMenuEvent) {
-      graphTable.setRowSelectionAllowed(false);
-    }
-  }
 }

@@ -2,25 +2,32 @@ package com.virtuslab.gitmachete.frontend.actions.dialogs
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.dsl.builder.MutableProperty
-import com.intellij.ui.dsl.builder.panel
-import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot
+import com.intellij.ui.components.JBRadioButton
+import com.intellij.ui.dsl.builder.*
+import com.virtuslab.gitmachete.backend.api.ICommitOfManagedBranch
 import com.virtuslab.gitmachete.backend.api.INonRootManagedBranchSnapshot
 import com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle.format
 import com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle.getString
+import org.apache.commons.text.StringEscapeUtils.escapeHtml4
+import java.awt.Component
+import javax.swing.DefaultListCellRenderer
+import javax.swing.JList
 
 enum class OverrideOption {
   PARENT,
-  INFERRED
+  INFERRED,
+  CUSTOM
 }
 
 class OverrideForkPointDialog(
   project: Project,
-  private val parentBranch: IManagedBranchSnapshot,
   private val branch: INonRootManagedBranchSnapshot
 ) : DialogWrapper(project, /* canBeParent */ true) {
 
   private var myOverrideOption = OverrideOption.PARENT
+  private var customCommit: ICommitOfManagedBranch? = branch.forkPoint
+
+  private val parent = branch.parent
 
   init {
     title =
@@ -32,8 +39,9 @@ class OverrideForkPointDialog(
   fun showAndGetSelectedCommit() =
     if (showAndGet()) {
       when (myOverrideOption) {
-        OverrideOption.PARENT -> parentBranch.pointedCommit
+        OverrideOption.PARENT -> parent.pointedCommit
         OverrideOption.INFERRED -> branch.forkPoint
+        OverrideOption.CUSTOM -> customCommit
       }
     } else {
       null
@@ -50,6 +58,7 @@ class OverrideForkPointDialog(
         )
       )
     }
+
     buttonsGroup {
       row {
         radioButton(
@@ -57,20 +66,11 @@ class OverrideForkPointDialog(
             getString(
               "action.GitMachete.BaseOverrideForkPointAction.dialog.override-fork-point.radio-button.parent"
             ),
-            parentBranch.name
+            parent.name
           ),
           OverrideOption.PARENT
         )
-          .comment(parentBranch.pointedCommit.shortMessage)
-      }
-
-      var thisRowComment = "cannot resolve commit message"
-
-      var radioButtonComment = "cannot resolve commit hash"
-
-      if (branch.forkPoint != null) {
-        thisRowComment = branch.forkPoint!!.shortMessage
-        radioButtonComment = branch.forkPoint!!.shortHash
+          .comment(escapeHtml4(parent.pointedCommit.shortMessage))
       }
 
       row {
@@ -79,13 +79,45 @@ class OverrideForkPointDialog(
             getString(
               "action.GitMachete.BaseOverrideForkPointAction.dialog.override-fork-point.radio-button.inferred"
             ),
-            radioButtonComment
+            branch.forkPoint?.shortHash ?: "cannot resolve commit hash"
           ),
           OverrideOption.INFERRED
         )
-          .comment(
-            thisRowComment
-          )
+          .comment(escapeHtml4(branch.forkPoint?.shortMessage) ?: "cannot resolve commit message")
+      }
+
+      row {
+        val rb: Cell<JBRadioButton> = radioButton(
+          format(
+            getString(
+              "action.GitMachete.BaseOverrideForkPointAction.dialog.override-fork-point.radio-button.custom"
+            ),
+            branch.forkPoint?.shortHash ?: "cannot resolve commit hash"
+          ),
+          OverrideOption.CUSTOM
+        )
+
+        val list = branch.commitsUntilParent + listOf(branch.forkPoint, parent.pointedCommit)
+        val items = list.filterNotNull().distinct().reversed()
+
+        comboBox(
+          items,
+          object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(
+              list: JList<*>?,
+              value: Any?,
+              index: Int,
+              isSelected: Boolean,
+              cellHasFocus: Boolean
+            ): Component {
+              val commit: ICommitOfManagedBranch = value as ICommitOfManagedBranch
+              text = "<html><tt>[${commit.shortHash}]</tt> ${escapeHtml4(commit.shortMessage)}</html>"
+              return this
+            }
+          }
+        ).enabledIf(rb.selected).bindItem(
+          MutableProperty(::customCommit) { customCommit = it }
+        )
       }
     }
       .bind(

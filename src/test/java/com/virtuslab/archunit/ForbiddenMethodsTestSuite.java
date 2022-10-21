@@ -7,6 +7,7 @@ import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.Wi
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.intellij.ide.util.PropertiesComponent;
 import org.junit.Test;
 
 import com.virtuslab.gitmachete.backend.impl.GitMacheteRepositorySnapshot;
@@ -119,6 +120,15 @@ public class ForbiddenMethodsTestSuite extends BaseArchUnitTestSuite {
         .because("Option#toString is sometimes mistakenly interpolated inside strings (also the user-facing ones), " +
             "whereas in 90% of cases the programmer`s intention " +
             "is to interpolate the contained value aka the result of `.get()` and not the Option itself")
+        .check(importedClasses);
+  }
+
+  @Test
+  public void no_classes_should_call_PropertiesComponent_getInstance_without_args() {
+    noClasses()
+        .should().callMethod(PropertiesComponent.class, "getInstance")
+        .because(
+            "getInstance without `project` argument gives application-level persistence while we prefer project-level persistence")
         .check(importedClasses);
   }
 

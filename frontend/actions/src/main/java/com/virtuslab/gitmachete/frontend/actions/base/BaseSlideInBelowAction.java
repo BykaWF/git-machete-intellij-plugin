@@ -31,7 +31,7 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 
 import com.virtuslab.branchlayout.api.BranchLayoutEntry;
 import com.virtuslab.gitmachete.frontend.actions.backgroundables.FetchBackgroundable;
-import com.virtuslab.gitmachete.frontend.actions.backgroundables.SlideInBackgroundable;
+import com.virtuslab.gitmachete.frontend.actions.backgroundables.SlideInNonRootBackgroundable;
 import com.virtuslab.gitmachete.frontend.actions.dialogs.SlideInDialog;
 import com.virtuslab.gitmachete.frontend.actions.expectedkeys.IExpectsKeyGitMacheteRepository;
 import com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle;
@@ -125,7 +125,6 @@ public abstract class BaseSlideInBelowAction extends BaseGitMacheteRepositoryRea
       }
     }
 
-    // TODO (#430): expose getParent from branch layout API
     val parentEntry = branchLayout.getEntryByName(parentName);
     val entryAlreadyExistsBelowGivenParent = parentEntry != null
         && parentEntry.getChildren().map(BranchLayoutEntry::getName)
@@ -137,7 +136,7 @@ public abstract class BaseSlideInBelowAction extends BaseGitMacheteRepositoryRea
       return;
     }
 
-    new SlideInBackgroundable(project,
+    new SlideInNonRootBackgroundable(project,
         gitRepository,
         branchLayout,
         branchLayoutWriter,

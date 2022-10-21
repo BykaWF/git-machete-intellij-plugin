@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## v3.2.0
+- Added a new `alt + enter` intention action to create a non-existing branch if user adds it to the machete file.
+- Added an option to manually pick a commit for the fork point override.
+- Fixed project-dependent settings persistence.
+
+## v3.1.1
 - Removed automatic rediscovery in case of empty machete file
+- Fixed indication of a repeated entry in machete file.
 
 ## v3.1.0
 - Added support for IntelliJ 2022.3.
