@@ -9,7 +9,7 @@ import org.checkerframework.checker.guieffect.qual.UIEffect;
 import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequestShort;
 
 import com.virtuslab.gitmachete.frontend.actions.base.BaseProjectDependentAction;
-import com.virtuslab.gitmachete.frontend.actions.common.GHPRLoader;
+import com.virtuslab.gitmachete.frontend.ui.providerservice.GHPRLoaderProvider;
 
 @CustomLog
 public class RefreshStatusAction extends BaseProjectDependentAction {
@@ -23,7 +23,9 @@ public class RefreshStatusAction extends BaseProjectDependentAction {
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
     FileDocumentManager.getInstance().saveAllDocuments();
-    List<GHPullRequestShort> pullRequestShorts = GHPRLoader.loadPRs(getProject(anActionEvent));
+    GHPRLoaderProvider ghprLoaderProvider = getProject(anActionEvent).getService(GHPRLoaderProvider.class);
+    ghprLoaderProvider.init();
+    List<GHPullRequestShort> pullRequestShorts = ghprLoaderProvider.getLoadedData();
     log().info(pullRequestShorts.toString());
     getGraphTable(anActionEvent).queueRepositoryUpdateAndModelRefresh();
   }
