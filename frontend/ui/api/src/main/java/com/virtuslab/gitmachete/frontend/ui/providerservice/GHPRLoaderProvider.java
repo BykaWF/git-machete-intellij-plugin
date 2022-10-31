@@ -14,38 +14,33 @@ import org.jetbrains.plugins.github.pullrequest.data.GHPRListLoader;
 import org.jetbrains.plugins.github.pullrequest.ui.toolwindow.GHPRListSearchValue;
 import org.jetbrains.plugins.github.util.GithubUrlUtil;
 
-@SuppressWarnings({"nullness:argument", "nullness:dereference.of.nullable"})
+@SuppressWarnings({"nullness:argument", "nullness:dereference.of.nullable", "nullness:assignment",
+    "nullness:method.invocation"})
 @Service
-public class GHPRLoaderProvider {
-  private GHPRListLoader ghprListLoader;
-  private Project project;
+public final class GHPRLoaderProvider {
+  private final GHPRListLoader ghprListLoader;
 
   public GHPRLoaderProvider(Project project) {
-    this.project = project;
+    this.ghprListLoader = createLoader(project);
   }
 
-  public void init() {
-    if (ghprListLoader == null) {
-      try {
-        val githubAuthenticationManager = GithubAuthenticationManager.getInstance();
-        val gitRepositoryProvider = project.getService(SelectedGitRepositoryProvider.class);
+  private GHPRListLoader createLoader(Project project) {
+    val githubAuthenticationManager = GithubAuthenticationManager.getInstance();
+    val gitRepositoryProvider = project.getService(SelectedGitRepositoryProvider.class);
 
-        val remotes = gitRepositoryProvider.getSelectedGitRepository().getRemotes();
-        val url = remotes.iterator().next().getFirstUrl();
-        val repositoryPath = GithubUrlUtil.getUserAndRepositoryFromRemoteUrl(url);
-        GHRepositoryCoordinates repository = new GHRepositoryCoordinates(GithubServerPath.DEFAULT_SERVER, repositoryPath);
+    val remotes = gitRepositoryProvider.getSelectedGitRepository().getRemotes();
+    val url = remotes.iterator().next().getFirstUrl();
+    val repositoryPath = GithubUrlUtil.getUserAndRepositoryFromRemoteUrl(url);
+    GHRepositoryCoordinates repository = new GHRepositoryCoordinates(GithubServerPath.DEFAULT_SERVER, repositoryPath);
 
-        val account = githubAuthenticationManager.getDefaultAccount(project);
-        val token = githubAuthenticationManager.getTokenForAccount$intellij_vcs_github(account);
-        GithubApiRequestExecutor requestExecutor = GithubApiRequestExecutor.Factory.Companion.getInstance().create(token);
+    val account = githubAuthenticationManager.getAccounts().iterator().next();
+    val token = githubAuthenticationManager.getTokenForAccount$intellij_vcs_github(account);
+    GithubApiRequestExecutor requestExecutor = GithubApiRequestExecutor.Factory.Companion.getInstance().create(token);
 
-        ghprListLoader = new GHPRListLoader(ProgressManager.getInstance(), requestExecutor, repository);
-        ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
-        ghprListLoader.loadMore(false);
-      } catch (NullPointerException ignored) {
-
-      }
-    }
+    GHPRListLoader loader = new GHPRListLoader(ProgressManager.getInstance(), requestExecutor, repository);
+    loader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
+    loader.loadMore(false);
+    return loader;
   }
 
   public List<GHPullRequestShort> getLoadedData() {

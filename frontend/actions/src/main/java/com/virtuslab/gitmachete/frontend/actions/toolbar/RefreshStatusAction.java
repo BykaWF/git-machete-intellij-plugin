@@ -24,7 +24,6 @@ public class RefreshStatusAction extends BaseProjectDependentAction {
   public void actionPerformed(AnActionEvent anActionEvent) {
     FileDocumentManager.getInstance().saveAllDocuments();
     GHPRLoaderProvider ghprLoaderProvider = getProject(anActionEvent).getService(GHPRLoaderProvider.class);
-    ghprLoaderProvider.init();
     List<GHPullRequestShort> pullRequestShorts = ghprLoaderProvider.getLoadedData();
     log().info(pullRequestShorts.toString());
     getGraphTable(anActionEvent).queueRepositoryUpdateAndModelRefresh();
