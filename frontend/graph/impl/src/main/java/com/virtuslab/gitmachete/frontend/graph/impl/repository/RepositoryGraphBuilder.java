@@ -190,6 +190,7 @@ public class RepositoryGraphBuilder {
     val currentBranch = repositorySnapshot.getCurrentBranchIfManaged();
     boolean isCurrentBranch = currentBranch != null && currentBranch.equals(branch);
     boolean hasChildItem = !branch.getChildren().isEmpty();
+    //GHRR magic
 
     return new BranchItem(branch, graphItemColor, relationToRemote, prevSiblingItemIndex, indentLevel,
         isCurrentBranch, hasChildItem);

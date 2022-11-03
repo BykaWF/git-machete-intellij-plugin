@@ -190,6 +190,8 @@ public final class BranchOrCommitCellRendererComponent extends SimpleColoredRend
       val textAttributes = new SimpleTextAttributes(STYLE_PLAIN, getColor(relationToRemote));
       String relationToRemoteLabel = getRelationToRemoteBasedLabel(relationToRemote);
       append(" " + relationToRemoteLabel, textAttributes);
+
+      //GHPR pr = branchItem.getPR
     } else {
       ICommitItem commitItem = graphItem.asCommitItem();
       INonRootManagedBranchSnapshot containingBranch = commitItem.getContainingBranch();
