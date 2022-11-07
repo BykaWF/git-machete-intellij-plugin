@@ -65,7 +65,7 @@ ln -s ../../scripts/run-pre-build-checks .git/hooks/pre-commit
 ```
 
 #### Windows
-**The hooks do not work on Windows** (however their execution seems to be possible theoretically).
+**The hooks do not work on Windows** (however, their execution seems to be possible theoretically).
 This is because one may not be emulating bash environment in any way or doing it in some specific way.
 
 #### macOS
@@ -114,7 +114,7 @@ Local (non-CI) builds by default skip most of [Checker Framework's](https://chec
 To make local builds more aligned with CI builds (at the expense of ~2x longer compilation from scratch),
 set `runAllCheckers` Gradle project property (e.g. `./gradlew -PrunAllCheckers build`).
 
-In case of spurious cache-related issues with Gradle build, try the following remedies (in the order from the least intrusive to the most):
+In case of spurious cache-related issues with the Gradle build, try the following remedies (in the order from the least intrusive to the most):
 * `./gradlew --stop` to shut down Gradle daemon
 * `pkill -e -9 -f '.*Gradle.*'` to kill all Gradle processes
 * `./gradlew clean` and re-run the failing `./gradlew` command with `--no-build-cache`
@@ -312,13 +312,13 @@ The whole logic of the process can be illustrated with an example:
 1. our plugin in version `0.7.0` is compatible with IntelliJ `2020.2`
 2. then IntelliJ `2020.3-EAP` is released (see [snapshot repository](https://www.jetbrains.com/intellij-repository/snapshots/) -> Ctrl+F `.idea`),
    and is detected with `./gradlew updateIntellijVersions`, <br/>
-   new `eapOfLatestSupportedMajor` is set in [intellijVersions.properties](intellijVersions.properties)
+   new `eapOfLatestSupportedMajor` is set in [intellij-versions.properties](intellij-versions.properties)
 3. we check if `0.7.0` is compatible with IntelliJ `2020.3-EAP` &mdash; see if the CI pipeline passes (this will both check binary compatibility and run UI tests against the given EAP)
 4. we release the plugin as `0.8.0` (`untilBuild` will extend automatically to `2020.3.*`
-   via `latestSupportedMajor` in [intellijVersions.properties](intellijVersions.properties))
+   via `latestSupportedMajor` in [intellij-versions.properties](intellij-versions.properties))
 5. new stable version `2020.3` is released (see [release repository](https://www.jetbrains.com/intellij-repository/releases/) -> Ctrl+F `.idea`)
    and is detected using `./gradlew updateIntellijVersions`, <br/>
-   `latestStable` and additionally `latestMinorsOfOldSupportedMajors` are changed in [intellijVersions.properties](intellijVersions.properties)
+   `latestStable` and additionally `latestMinorsOfOldSupportedMajors` are changed in [intellij-versions.properties](intellij-versions.properties)
 6. we verify ASAP that `0.8.0` is binary compatible with `2020.3` as well
 7. since `latestStable` is used as the version to build against,
    a few _source_ incompatibilities might appear once `latestStable` is updated, even when the plugin was _binary_ compatible with the new IDE version.
