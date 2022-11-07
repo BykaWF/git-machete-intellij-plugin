@@ -77,12 +77,9 @@ public class RepositoryGraphBuilder {
   }
 
   /**
-   * @param graphItems
-   *          the collection to store child commits and branches
-   * @param childBranches
-   *          branches to add with their commits
-   * @param parentBranchIndex
-   *          the index of branch which child branches (with their commits) are to be added
+   * @param graphItems        the collection to store child commits and branches
+   * @param childBranches     branches to add with their commits
+   * @param parentBranchIndex the index of branch which child branches (with their commits) are to be added
    */
   private void recursivelyAddCommitsAndBranches(
       java.util.List<IGraphItem> graphItems,
@@ -190,9 +187,8 @@ public class RepositoryGraphBuilder {
     val currentBranch = repositorySnapshot.getCurrentBranchIfManaged();
     boolean isCurrentBranch = currentBranch != null && currentBranch.equals(branch);
     boolean hasChildItem = !branch.getChildren().isEmpty();
-    //GHRR magic
 
-    return new BranchItem(branch, graphItemColor, relationToRemote, prevSiblingItemIndex, indentLevel,
+    return new BranchItem(branch, graphItemColor, relationToRemote, null, prevSiblingItemIndex, indentLevel,
         isCurrentBranch, hasChildItem);
   }
 }

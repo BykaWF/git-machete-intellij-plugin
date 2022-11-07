@@ -6,7 +6,7 @@ import io.vavr.collection.List;
 import kr.pe.kwonnam.slf4jlambda.LambdaLogger;
 import lombok.CustomLog;
 import org.checkerframework.checker.guieffect.qual.UIEffect;
-import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequestShort;
+import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequest;
 
 import com.virtuslab.gitmachete.frontend.actions.base.BaseProjectDependentAction;
 import com.virtuslab.gitmachete.frontend.ui.providerservice.GHPRLoaderProvider;
@@ -23,9 +23,9 @@ public class RefreshStatusAction extends BaseProjectDependentAction {
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
     FileDocumentManager.getInstance().saveAllDocuments();
-    GHPRLoaderProvider ghprLoaderProvider = getProject(anActionEvent).getService(GHPRLoaderProvider.class);
-    List<GHPullRequestShort> pullRequestShorts = ghprLoaderProvider.getLoadedData();
-    log().info(pullRequestShorts.toString());
+    GHPRLoaderProvider service = getProject(anActionEvent).getService(GHPRLoaderProvider.class);
+    List<GHPullRequest> ghPullRequests = service.getGhPullRequests();
+    log().info(ghPullRequests.mkString());
     getGraphTable(anActionEvent).queueRepositoryUpdateAndModelRefresh();
   }
 }
