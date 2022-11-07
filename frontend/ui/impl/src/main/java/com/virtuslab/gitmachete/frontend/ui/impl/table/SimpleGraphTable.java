@@ -9,6 +9,7 @@ import lombok.val;
 import org.checkerframework.checker.guieffect.qual.UIEffect;
 
 import com.virtuslab.binding.RuntimeBinding;
+import com.virtuslab.gitmachete.backend.api.GitMachetePullRequests;
 import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositorySnapshot;
 import com.virtuslab.gitmachete.backend.api.NullGitMacheteRepositorySnapshot;
 import com.virtuslab.gitmachete.frontend.graph.api.repository.IRepositoryGraphCache;
@@ -33,7 +34,8 @@ public final class SimpleGraphTable extends BaseGraphTable implements IGitMachet
   private static GraphTableModel deriveGraphTableModel(IGitMacheteRepositorySnapshot macheteRepositorySnapshot,
       boolean isListingCommitsEnabled) {
     val repositoryGraphCache = RuntimeBinding.instantiateSoleImplementingClass(IRepositoryGraphCache.class);
-    val repositoryGraph = repositoryGraphCache.getRepositoryGraph(macheteRepositorySnapshot, isListingCommitsEnabled);
+    val repositoryGraph = repositoryGraphCache.getRepositoryGraph(macheteRepositorySnapshot, GitMachetePullRequests.EMPTY,
+        isListingCommitsEnabled);
     return new GraphTableModel(repositoryGraph);
   }
 

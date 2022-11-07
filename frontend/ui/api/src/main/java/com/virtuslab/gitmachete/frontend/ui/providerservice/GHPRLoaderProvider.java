@@ -10,13 +10,13 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import io.vavr.collection.List;
-import lombok.Getter;
 import lombok.val;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.github.api.GHRepositoryCoordinates;
 import org.jetbrains.plugins.github.api.GithubApiRequestExecutor;
 import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequest;
+import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequestState;
 import org.jetbrains.plugins.github.authentication.GithubAuthenticationManager;
 import org.jetbrains.plugins.github.pullrequest.data.GHListLoader;
 import org.jetbrains.plugins.github.pullrequest.data.GHPRListLoader;
@@ -25,16 +25,21 @@ import org.jetbrains.plugins.github.pullrequest.data.service.GHPRDetailsServiceI
 import org.jetbrains.plugins.github.pullrequest.ui.toolwindow.GHPRListSearchValue;
 import org.jetbrains.plugins.github.util.GithubUrlUtil;
 
+import com.virtuslab.gitmachete.backend.api.GitMachetePullRequests;
+import com.virtuslab.gitmachete.backend.api.PullRequest;
+import com.virtuslab.gitmachete.backend.api.PullRequestState;
+
 @Service
 public final class GHPRLoaderProvider implements Disposable {
+  private final Project project;
   @Nullable
   private final GHPRListLoader ghprListLoader;
   @Nullable
   private final GHPRDetailsService ghprDetailsService;
-  @Getter
   private List<GHPullRequest> ghPullRequests;
 
   public GHPRLoaderProvider(Project project) {
+    this.project = project;
     val pair = createLoaders(project);
     this.ghprListLoader = pair.first;
     this.ghprDetailsService = pair.second;
@@ -65,10 +70,10 @@ public final class GHPRLoaderProvider implements Disposable {
     }
   }
 
-  public void reload() {
-    if (ghprListLoader != null) {
-      ghprListLoader.loadMore(true);
-    }
+  public GitMachetePullRequests getGitMachetePullRequests() {
+    List<PullRequest> pullRequests = ghPullRequests
+        .map(x -> new PullRequest(x.getNumber(), x.getTitle(), mapGHState(x.getState()), x.getHeadRefName()));
+    return new GitMachetePullRequests(pullRequests);
   }
 
   @Override
@@ -88,6 +93,7 @@ public final class GHPRLoaderProvider implements Disposable {
               return Optional.<GHPullRequest>empty();
             }
           }).filter(Optional::isPresent).map(Optional::get).collect(List.collector());
+      project.getService(GraphTableProvider.class).getGraphTable().queueRepositoryUpdateAndModelRefresh();
     }
   }
 
@@ -121,5 +127,17 @@ public final class GHPRLoaderProvider implements Disposable {
     GHPRDetailsService detailsService = new GHPRDetailsServiceImpl(ProgressManager.getInstance(), requestExecutor, repository);
 
     return Pair.pair(loader, detailsService);
+  }
+
+  private static PullRequestState mapGHState(GHPullRequestState state) {
+    switch (state) {
+      case MERGED :
+        return PullRequestState.MERGED;
+      case OPEN :
+        return PullRequestState.OPEN;
+      case CLOSED :
+      default :
+        return PullRequestState.CLOSED;
+    }
   }
 }

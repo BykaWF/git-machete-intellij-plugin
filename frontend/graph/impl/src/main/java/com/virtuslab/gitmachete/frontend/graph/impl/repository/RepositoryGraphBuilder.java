@@ -25,14 +25,7 @@ import lombok.val;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
 
-import com.virtuslab.gitmachete.backend.api.ICommitOfManagedBranch;
-import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositorySnapshot;
-import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot;
-import com.virtuslab.gitmachete.backend.api.INonRootManagedBranchSnapshot;
-import com.virtuslab.gitmachete.backend.api.IRootManagedBranchSnapshot;
-import com.virtuslab.gitmachete.backend.api.NullGitMacheteRepositorySnapshot;
-import com.virtuslab.gitmachete.backend.api.RelationToRemote;
-import com.virtuslab.gitmachete.backend.api.SyncToParentStatus;
+import com.virtuslab.gitmachete.backend.api.*;
 import com.virtuslab.gitmachete.frontend.graph.api.items.GraphItemColor;
 import com.virtuslab.gitmachete.frontend.graph.api.items.IGraphItem;
 import com.virtuslab.gitmachete.frontend.graph.api.repository.IBranchGetCommitsStrategy;
@@ -48,6 +41,9 @@ public class RepositoryGraphBuilder {
 
   @Setter
   private IBranchGetCommitsStrategy branchGetCommitsStrategy = DEFAULT_GET_COMMITS;
+
+  @Setter
+  private GitMachetePullRequests gitMachetePullRequests = GitMachetePullRequests.EMPTY;
 
   public static final IBranchGetCommitsStrategy DEFAULT_GET_COMMITS = INonRootManagedBranchSnapshot::getUniqueCommits;
   public static final IBranchGetCommitsStrategy EMPTY_GET_COMMITS = __ -> List.empty();
@@ -187,8 +183,9 @@ public class RepositoryGraphBuilder {
     val currentBranch = repositorySnapshot.getCurrentBranchIfManaged();
     boolean isCurrentBranch = currentBranch != null && currentBranch.equals(branch);
     boolean hasChildItem = !branch.getChildren().isEmpty();
+    val pullRequest = gitMachetePullRequests.getHeadNameToPullRequest().getOrElse(branch.getName(), null);
 
-    return new BranchItem(branch, graphItemColor, relationToRemote, null, prevSiblingItemIndex, indentLevel,
+    return new BranchItem(branch, graphItemColor, relationToRemote, pullRequest, prevSiblingItemIndex, indentLevel,
         isCurrentBranch, hasChildItem);
   }
 }

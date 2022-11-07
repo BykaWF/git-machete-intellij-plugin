@@ -176,7 +176,7 @@ public final class BranchOrCommitCellRendererComponent extends SimpleColoredRend
       PullRequest relatedPullRequest = branchItem.getRelatedPullRequest();
       if (relatedPullRequest != null) {
         val prTextAttributes = new SimpleTextAttributes(STYLE_PLAIN, getColor(relatedPullRequest));
-        append("PR " + relatedPullRequest.getNumber(), prTextAttributes);
+        append(" PR #" + relatedPullRequest.getNumber(), prTextAttributes);
       }
 
       String customAnnotation = branch.getCustomAnnotation();
