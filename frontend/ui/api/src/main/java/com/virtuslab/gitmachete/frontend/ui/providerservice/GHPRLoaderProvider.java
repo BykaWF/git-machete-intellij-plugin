@@ -134,12 +134,12 @@ public final class GHPRLoaderProvider implements Disposable {
 
   private static PullRequestState mapGHState(GHPullRequestState state) {
     switch (state) {
-      case MERGED:
+      case MERGED :
         return PullRequestState.MERGED;
-      case OPEN:
+      case OPEN :
         return PullRequestState.OPEN;
-      case CLOSED:
-      default:
+      case CLOSED :
+      default :
         return PullRequestState.CLOSED;
     }
   }
