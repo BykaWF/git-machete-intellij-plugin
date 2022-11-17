@@ -3,6 +3,7 @@ package com.virtuslab.branchlayout.api;
 import java.util.Comparator;
 import java.util.Objects;
 
+import io.vavr.Function1;
 import io.vavr.Tuple;
 import io.vavr.collection.List;
 import io.vavr.collection.Map;
@@ -12,9 +13,9 @@ import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- *  Two {@code BranchLayout} objects are equal when their root entries (after sorting by name) are equal.
+ * Two {@code BranchLayout} objects are equal when their root entries (after sorting by name) are equal.
  *
- *  @see BranchLayoutEntry
+ * @see BranchLayoutEntry
  */
 public class BranchLayout {
 
@@ -67,6 +68,15 @@ public class BranchLayout {
       return getEntryByName(entriesOrderedList.get(previousIndex));
     }
     return null;
+  }
+
+  public BranchLayout map(Function1<BranchLayoutEntry, BranchLayoutEntry> f) {
+    return new BranchLayout(rootEntries.map(entry -> map(entry, f)));
+  }
+
+  private BranchLayoutEntry map(BranchLayoutEntry entry, Function1<BranchLayoutEntry, BranchLayoutEntry> f) {
+    val newChildren = entry.getChildren().map(child -> map(child, f));
+    return f.apply(entry).withChildren(newChildren);
   }
 
   public BranchLayout slideOut(String branchName) {

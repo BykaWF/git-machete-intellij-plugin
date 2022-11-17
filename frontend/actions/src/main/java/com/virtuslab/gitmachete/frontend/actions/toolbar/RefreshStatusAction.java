@@ -6,6 +6,7 @@ import kr.pe.kwonnam.slf4jlambda.LambdaLogger;
 import lombok.CustomLog;
 import org.checkerframework.checker.guieffect.qual.UIEffect;
 
+import com.virtuslab.gitmachete.frontend.actions.backgroundables.GHPRLoader;
 import com.virtuslab.gitmachete.frontend.actions.base.BaseProjectDependentAction;
 
 @CustomLog
@@ -20,7 +21,7 @@ public class RefreshStatusAction extends BaseProjectDependentAction {
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
     FileDocumentManager.getInstance().saveAllDocuments();
-
+    getProject(anActionEvent).getService(GHPRLoader.class).updateCustomAnnotations();
     getGraphTable(anActionEvent).queueRepositoryUpdateAndModelRefresh();
   }
 }
