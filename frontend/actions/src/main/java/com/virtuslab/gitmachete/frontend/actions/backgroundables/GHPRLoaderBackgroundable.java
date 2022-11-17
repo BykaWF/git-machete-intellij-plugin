@@ -2,20 +2,21 @@ package com.virtuslab.gitmachete.frontend.actions.backgroundables;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import com.intellij.openapi.Disposable;
-import com.intellij.openapi.components.Service;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import git4idea.repo.GitRepository;
+import com.intellij.openapi.util.Disposer;
 import io.vavr.collection.List;
 import io.vavr.collection.Map;
 import io.vavr.control.Option;
 import lombok.val;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.github.api.GHRepositoryCoordinates;
@@ -39,34 +40,38 @@ import com.virtuslab.gitmachete.frontend.ui.providerservice.GraphTableProvider;
 import com.virtuslab.gitmachete.frontend.ui.providerservice.SelectedGitRepositoryProvider;
 import com.virtuslab.gitmachete.frontend.vfsutils.GitVfsUtils;
 
-@Service
-public final class GHPRLoader implements Disposable {
+public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
   private final Project project;
-  @Nullable
-  private final GithubApiRequestExecutor executor;
-  @Nullable
-  private final GHRepositoryCoordinates coordinates;
-  @Nullable
-  private final GitRepository repository;
+  @MonotonicNonNull
+  private GithubApiRequestExecutor executor;
+  @MonotonicNonNull
+  private GHRepositoryCoordinates coordinates;
+  private final Disposable disposable;
 
-  public GHPRLoader(Project project) {
+  public GHPRLoaderBackgroundable(Project project) {
+    super(project, "Load github PRs", false);
     this.project = project;
-    this.executor = getRequestExecutor();
-    this.coordinates = getRepositoryCoordinates(project);
-    this.repository = project.getService(SelectedGitRepositoryProvider.class).getSelectedGitRepository();
+    this.disposable = Disposer.newDisposable();
   }
 
   @Override
-  public void dispose() {
+  public void run(@NotNull ProgressIndicator indicator) {
+    val exe = getRequestExecutor();
+    if (exe != null) {
+      this.executor = exe;
+    }
+    val coord = getRepositoryCoordinates(project);
+    if (coord != null) {
+      this.coordinates = coord;
+    }
 
-  }
-
-  public void updateCustomAnnotations() {
     if (executor != null && coordinates != null) {
+
       val ghprListLoader = new GHPRListLoader(ProgressManager.getInstance(), executor, coordinates);
+      Disposer.register(disposable, ghprListLoader);
 
       ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
-      ghprListLoader.addDataListener(this, new GHListLoader.ListDataListener() {
+      ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
         @Override
         public void onAllDataRemoved() {}
 
@@ -81,14 +86,26 @@ public final class GHPRLoader implements Disposable {
           if (ghprListLoader.canLoadMore()) {
             ghprListLoader.loadMore(false);
           } else {
-            val pullRequests = loadDetails(ghprListLoader.getLoadedData());
-            writeBranchLayout(pullRequests);
+            synchronized (disposable) {
+              disposable.notify();
+            }
           }
         }
       });
       ghprListLoader.loadMore(false);
+      try {
+        synchronized (disposable) {
+          disposable.wait();
+        }
+      } catch (InterruptedException ignored) {}
+      val pullRequests = loadDetails(ghprListLoader.getLoadedData());
+      writeBranchLayout(pullRequests);
     }
+  }
 
+  @Override
+  public void onFinished() {
+    Disposer.dispose(disposable);
   }
 
   private List<GHPullRequest> loadDetails(ArrayList<GHPullRequestShort> loadedData) {
@@ -101,16 +118,16 @@ public final class GHPRLoader implements Disposable {
     return loadedData.stream()
         .map(x -> ghprDetailsService.loadDetails(progressIndicator, x)).map(x -> {
           try {
-            return Optional.ofNullable(x.get());
+            return Option.of(x.get());
           } catch (InterruptedException | ExecutionException e) {
-            return Optional.<GHPullRequest>empty();
+            return Option.<GHPullRequest>none();
           }
-        }).filter(Optional::isPresent).map(Optional::get).collect(List.collector());
+        }).filter(Option::isDefined).map(Option::get).collect(List.collector());
 
   }
 
   private void writeBranchLayout(List<GHPullRequest> pullRequests) {
-    Objects.requireNonNull(repository);
+    val repository = project.getService(SelectedGitRepositoryProvider.class).getSelectedGitRepository();
 
     Map<String, GHPullRequest> requestMap = pullRequests.toMap(GHPullRequest::getHeadRefName, Function.identity());
     val macheteFilePath = Option.of(repository).map(GitVfsUtils::getMacheteFilePath).getOrNull();
@@ -120,8 +137,7 @@ public final class GHPRLoader implements Disposable {
       try {
         BranchLayout branchLayout = branchLayoutReader.read(macheteFilePath);
         val newBranchLayout = branchLayout.map(entry -> {
-          val name = entry.getName();
-          String annotation = requestMap.get(name).map(x -> "PR #" + x.getNumber()).getOrNull();
+          String annotation = requestMap.get(entry.getName()).map(x -> "PR #" + x.getNumber()).getOrNull();
           if (annotation == null) {
             annotation = entry.getCustomAnnotation();
           }
