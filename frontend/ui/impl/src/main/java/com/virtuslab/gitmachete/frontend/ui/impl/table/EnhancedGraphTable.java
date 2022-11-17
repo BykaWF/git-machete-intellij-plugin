@@ -62,7 +62,11 @@ import com.virtuslab.branchlayout.api.BranchLayout;
 import com.virtuslab.branchlayout.api.BranchLayoutException;
 import com.virtuslab.branchlayout.api.readwrite.IBranchLayoutReader;
 import com.virtuslab.branchlayout.api.readwrite.IBranchLayoutWriter;
-import com.virtuslab.gitmachete.backend.api.*;
+import com.virtuslab.gitmachete.backend.api.IGitMacheteRepository;
+import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositorySnapshot;
+import com.virtuslab.gitmachete.backend.api.ILocalBranchReference;
+import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot;
+import com.virtuslab.gitmachete.backend.api.NullGitMacheteRepositorySnapshot;
 import com.virtuslab.gitmachete.frontend.datakeys.DataKeys;
 import com.virtuslab.gitmachete.frontend.defs.ActionPlaces;
 import com.virtuslab.gitmachete.frontend.defs.FileTypeIds;
@@ -74,7 +78,6 @@ import com.virtuslab.gitmachete.frontend.ui.api.gitrepositoryselection.IGitRepos
 import com.virtuslab.gitmachete.frontend.ui.api.table.BaseEnhancedGraphTable;
 import com.virtuslab.gitmachete.frontend.ui.impl.cell.BranchOrCommitCell;
 import com.virtuslab.gitmachete.frontend.ui.impl.cell.BranchOrCommitCellRenderer;
-import com.virtuslab.gitmachete.frontend.ui.providerservice.GHPRLoaderProvider;
 import com.virtuslab.gitmachete.frontend.ui.providerservice.SelectedGitRepositoryProvider;
 import com.virtuslab.gitmachete.frontend.vfsutils.GitVfsUtils;
 import com.virtuslab.qual.guieffect.IgnoreUIThreadUnsafeCalls;
@@ -300,12 +303,11 @@ public final class EnhancedGraphTable extends BaseEnhancedGraphTable
     LOG.debug(() -> "Entering: macheteFilePath = ${macheteFilePath}, isMacheteFilePresent = ${isMacheteFilePresent}, " +
         "isListingCommits = ${isListingCommits}");
 
-    GitMachetePullRequests pullRequests = project.getService(GHPRLoaderProvider.class).getGitMachetePullRequests();
     IRepositoryGraph repositoryGraph;
     if (gitMacheteRepositorySnapshot == null) {
       repositoryGraph = NullRepositoryGraph.getInstance();
     } else {
-      repositoryGraph = repositoryGraphCache.getRepositoryGraph(gitMacheteRepositorySnapshot, pullRequests, isListingCommits);
+      repositoryGraph = repositoryGraphCache.getRepositoryGraph(gitMacheteRepositorySnapshot, isListingCommits);
       if (gitMacheteRepositorySnapshot.getRootBranches().isEmpty()) {
         if (gitMacheteRepositorySnapshot.getSkippedBranchNames().isEmpty()) {
           LOG.info("Machete file (${macheteFilePath}) is empty");

@@ -1,10 +1,8 @@
 package com.virtuslab.gitmachete.frontend.graph.api.items;
 
 import io.vavr.NotImplementedError;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot;
-import com.virtuslab.gitmachete.backend.api.PullRequest;
 import com.virtuslab.gitmachete.backend.api.RelationToRemote;
 
 public interface IBranchItem extends IGraphItem {
@@ -12,9 +10,6 @@ public interface IBranchItem extends IGraphItem {
   IManagedBranchSnapshot getBranch();
 
   RelationToRemote getRelationToRemote();
-
-  @Nullable
-  PullRequest getRelatedPullRequest();
 
   boolean isCurrentBranch();
 

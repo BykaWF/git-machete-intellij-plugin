@@ -4,12 +4,15 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import io.vavr.collection.List;
+import lombok.Data;
+import lombok.Getter;
 import lombok.val;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +40,7 @@ public final class GHPRLoaderProvider implements Disposable {
   @Nullable
   private final GHPRDetailsService ghprDetailsService;
   private List<GHPullRequest> ghPullRequests;
+
 
   public GHPRLoaderProvider(Project project) {
     this.project = project;
@@ -134,12 +138,12 @@ public final class GHPRLoaderProvider implements Disposable {
 
   private static PullRequestState mapGHState(GHPullRequestState state) {
     switch (state) {
-      case MERGED :
+      case MERGED:
         return PullRequestState.MERGED;
-      case OPEN :
+      case OPEN:
         return PullRequestState.OPEN;
-      case CLOSED :
-      default :
+      case CLOSED:
+      default:
         return PullRequestState.CLOSED;
     }
   }

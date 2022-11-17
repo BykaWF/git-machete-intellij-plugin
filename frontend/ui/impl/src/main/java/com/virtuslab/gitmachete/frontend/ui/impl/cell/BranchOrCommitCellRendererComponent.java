@@ -4,9 +4,6 @@ import static com.intellij.ui.SimpleTextAttributes.GRAY_ATTRIBUTES;
 import static com.intellij.ui.SimpleTextAttributes.REGULAR_ATTRIBUTES;
 import static com.intellij.ui.SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES;
 import static com.intellij.ui.SimpleTextAttributes.STYLE_PLAIN;
-import static com.virtuslab.gitmachete.backend.api.PullRequestState.CLOSED;
-import static com.virtuslab.gitmachete.backend.api.PullRequestState.MERGED;
-import static com.virtuslab.gitmachete.backend.api.PullRequestState.OPEN;
 import static com.virtuslab.gitmachete.backend.api.SyncToParentStatus.InSync;
 import static com.virtuslab.gitmachete.backend.api.SyncToParentStatus.InSyncButForkPointOff;
 import static com.virtuslab.gitmachete.backend.api.SyncToParentStatus.MergedToParent;
@@ -18,7 +15,9 @@ import static com.virtuslab.gitmachete.backend.api.SyncToRemoteStatus.DivergedFr
 import static com.virtuslab.gitmachete.backend.api.SyncToRemoteStatus.InSyncToRemote;
 import static com.virtuslab.gitmachete.backend.api.SyncToRemoteStatus.NoRemotes;
 import static com.virtuslab.gitmachete.backend.api.SyncToRemoteStatus.Untracked;
-import static com.virtuslab.gitmachete.frontend.defs.Colors.*;
+import static com.virtuslab.gitmachete.frontend.defs.Colors.ORANGE;
+import static com.virtuslab.gitmachete.frontend.defs.Colors.RED;
+import static com.virtuslab.gitmachete.frontend.defs.Colors.TRANSPARENT;
 import static com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle.getString;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
@@ -54,7 +53,11 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.Positive;
 
 import com.virtuslab.binding.RuntimeBinding;
-import com.virtuslab.gitmachete.backend.api.*;
+import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot;
+import com.virtuslab.gitmachete.backend.api.INonRootManagedBranchSnapshot;
+import com.virtuslab.gitmachete.backend.api.IRootManagedBranchSnapshot;
+import com.virtuslab.gitmachete.backend.api.OngoingRepositoryOperationType;
+import com.virtuslab.gitmachete.backend.api.RelationToRemote;
 import com.virtuslab.gitmachete.frontend.defs.Colors;
 import com.virtuslab.gitmachete.frontend.graph.api.items.IBranchItem;
 import com.virtuslab.gitmachete.frontend.graph.api.items.ICommitItem;
@@ -173,12 +176,6 @@ public final class BranchOrCommitCellRendererComponent extends SimpleColoredRend
         setBranchToolTipText(branch);
       }
 
-      PullRequest relatedPullRequest = branchItem.getRelatedPullRequest();
-      if (relatedPullRequest != null) {
-        val prTextAttributes = new SimpleTextAttributes(STYLE_PLAIN, getColor(relatedPullRequest));
-        append(" PR #" + relatedPullRequest.getNumber(), prTextAttributes);
-      }
-
       String customAnnotation = branch.getCustomAnnotation();
       if (customAnnotation != null) {
         append(CELL_TEXT_FRAGMENTS_SPACING + customAnnotation, GRAY_ATTRIBUTES);
@@ -272,13 +269,6 @@ public final class BranchOrCommitCellRendererComponent extends SimpleColoredRend
         Case($(isIn(NoRemotes, InSyncToRemote)), TRANSPARENT),
         Case($(Untracked), ORANGE),
         Case($(isIn(AheadOfRemote, BehindRemote, DivergedFromAndNewerThanRemote, DivergedFromAndOlderThanRemote)), RED));
-  }
-
-  private static JBColor getColor(PullRequest pullRequest) {
-    return Match(pullRequest.getState()).of(
-        Case($(OPEN), GREEN),
-        Case($(CLOSED), RED),
-        Case($(MERGED), TRANSPARENT));
   }
 
   private static String getRelationToRemoteBasedLabel(RelationToRemote relation) {

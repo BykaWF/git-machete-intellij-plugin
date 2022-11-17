@@ -20,6 +20,7 @@ public class RefreshStatusAction extends BaseProjectDependentAction {
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
     FileDocumentManager.getInstance().saveAllDocuments();
+
     getGraphTable(anActionEvent).queueRepositoryUpdateAndModelRefresh();
   }
 }

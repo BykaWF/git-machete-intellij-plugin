@@ -8,10 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import org.checkerframework.checker.index.qual.GTENegativeOne;
 import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import com.virtuslab.gitmachete.backend.api.IManagedBranchSnapshot;
-import com.virtuslab.gitmachete.backend.api.PullRequest;
 import com.virtuslab.gitmachete.backend.api.RelationToRemote;
 import com.virtuslab.gitmachete.frontend.graph.api.items.GraphItemColor;
 import com.virtuslab.gitmachete.frontend.graph.api.items.IBranchItem;
@@ -20,8 +18,6 @@ import com.virtuslab.gitmachete.frontend.graph.api.items.IBranchItem;
 public final class BranchItem extends BaseGraphItem implements IBranchItem {
   private final IManagedBranchSnapshot branch;
   private final RelationToRemote relationToRemote;
-  @Nullable
-  private final PullRequest relatedPullRequest;
   private final SimpleTextAttributes attributes;
   private final boolean isCurrentBranch;
 
@@ -32,7 +28,6 @@ public final class BranchItem extends BaseGraphItem implements IBranchItem {
       IManagedBranchSnapshot branch,
       GraphItemColor graphItemColor,
       RelationToRemote relationToRemote,
-      @Nullable PullRequest relatedPullRequest,
       @GTENegativeOne int prevSiblingItemIndex,
       @NonNegative int indentLevel,
       boolean isCurrentBranch,
@@ -40,7 +35,6 @@ public final class BranchItem extends BaseGraphItem implements IBranchItem {
     super(graphItemColor, prevSiblingItemIndex, indentLevel);
     this.branch = branch;
     this.relationToRemote = relationToRemote;
-    this.relatedPullRequest = relatedPullRequest;
     this.attributes = isCurrentBranch ? UNDERLINE_BOLD_ATTRIBUTES : NORMAL_ATTRIBUTES;
     this.isCurrentBranch = isCurrentBranch;
     this.hasChildItem = hasChildItem;
