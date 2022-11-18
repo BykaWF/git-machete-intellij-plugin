@@ -77,6 +77,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
   }
 
   private List<GHPullRequestShort> loadShortPRs(GHPRListLoader ghprListLoader) {
+    final boolean[] finishedLoading = {false};
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
       @Override
@@ -84,16 +85,19 @@ public class GHPRLoaderImpl implements GHPRLoader {
         if (ghprListLoader.canLoadMore() && !indicator.isCanceled()) {
           ghprListLoader.loadMore(false);
         } else {
-          synchronized (ghprListLoader) {
-            ghprListLoader.notify();
+          synchronized (finishedLoading) {
+            finishedLoading[0] = true;
+            finishedLoading.notify();
           }
         }
       }
     });
     ghprListLoader.loadMore(false);
     try {
-      synchronized (ghprListLoader) {
-        ghprListLoader.wait();
+      synchronized (finishedLoading) {
+        if (!finishedLoading[0]) {
+          finishedLoading.wait();
+        }
       }
     } catch (InterruptedException ignored) {}
     return List.ofAll(ghprListLoader.getLoadedData());
