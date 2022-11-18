@@ -1,6 +1,7 @@
 package com.virtuslab.gitmachete.frontend.actions.backgroundables;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -15,17 +16,18 @@ import io.vavr.collection.Map;
 import io.vavr.control.Option;
 import lombok.val;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.github.api.GHRepositoryCoordinates;
 import org.jetbrains.plugins.github.api.GithubApiRequestExecutor;
 import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequest;
 import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequestShort;
-import org.jetbrains.plugins.github.authentication.GithubAuthenticationManager;
+import org.jetbrains.plugins.github.authentication.GHAccountsUtil;
+import org.jetbrains.plugins.github.authentication.accounts.GithubAccount;
 import org.jetbrains.plugins.github.pullrequest.data.GHListLoader;
 import org.jetbrains.plugins.github.pullrequest.data.GHPRListLoader;
 import org.jetbrains.plugins.github.pullrequest.data.service.GHPRDetailsService;
 import org.jetbrains.plugins.github.pullrequest.data.service.GHPRDetailsServiceImpl;
 import org.jetbrains.plugins.github.pullrequest.ui.toolwindow.GHPRListSearchValue;
+import org.jetbrains.plugins.github.util.GHCompatibilityUtil;
 import org.jetbrains.plugins.github.util.GithubUrlUtil;
 
 import com.virtuslab.binding.RuntimeBinding;
@@ -52,7 +54,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
   @Override
   public void run() {
     indicator.setFraction(0.0);
-    val executor = getRequestExecutor();
+    val executor = getRequestExecutor(project);
     val coordinates = getRepositoryCoordinates(project);
 
     if (executor != null && coordinates != null) {
@@ -78,15 +80,6 @@ public class GHPRLoaderImpl implements GHPRLoader {
   private ArrayList<GHPullRequestShort> loadShortPRs(GHPRListLoader ghprListLoader) {
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
-      @Override
-      public void onAllDataRemoved() {}
-
-      @Override
-      public void onDataRemoved(@NotNull Object data) {}
-
-      @Override
-      public void onDataUpdated(int idx) {}
-
       @Override
       public void onDataAdded(int i) {
         if (ghprListLoader.canLoadMore() && !indicator.isCanceled()) {
@@ -153,28 +146,23 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
   }
 
-  private static @Nullable GithubApiRequestExecutor getRequestExecutor() {
-    val githubAuthenticationManager = GithubAuthenticationManager.getInstance();
-
-    if (!githubAuthenticationManager.hasAccounts()) {
+  private static @Nullable GithubApiRequestExecutor getRequestExecutor(Project project) {
+    val account = getGithubAccount();
+    if (account == null)
       return null;
-    }
-    val account = githubAuthenticationManager.getAccounts().iterator().next();
-    val token = githubAuthenticationManager.getTokenForAccount$intellij_vcs_github(account);
+    String token = GHCompatibilityUtil.getOrRequestToken(account, project);
     if (token == null) {
       return null;
     }
-    return (GithubApiRequestExecutor) GithubApiRequestExecutor.Factory.getInstance().create(token);
+    return GithubApiRequestExecutor.Factory.getInstance().create(token);
   }
 
   private static @Nullable GHRepositoryCoordinates getRepositoryCoordinates(Project project) {
     val gitRepositoryProvider = project.getService(SelectedGitRepositoryProvider.class);
-    val githubAuthenticationManager = GithubAuthenticationManager.getInstance();
 
-    if (!githubAuthenticationManager.hasAccounts()) {
+    val account = getGithubAccount();
+    if (account == null)
       return null;
-    }
-    val account = githubAuthenticationManager.getAccounts().iterator().next();
 
     val selectedGitRepository = gitRepositoryProvider.getSelectedGitRepository();
     if (selectedGitRepository == null) {
@@ -190,5 +178,13 @@ public class GHPRLoaderImpl implements GHPRLoader {
       return null;
     }
     return new GHRepositoryCoordinates(account.getServer(), repositoryPath);
+  }
+
+  private static @Nullable GithubAccount getGithubAccount() {
+    Set<GithubAccount> accounts = GHAccountsUtil.getAccounts();
+    if (accounts.isEmpty()) {
+      return null;
+    }
+    return accounts.iterator().next();
   }
 }
