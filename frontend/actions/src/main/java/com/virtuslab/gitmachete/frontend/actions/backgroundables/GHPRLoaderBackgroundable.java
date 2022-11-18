@@ -7,7 +7,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
-import org.jetbrains.annotations.NotNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
   private final Project project;
@@ -20,7 +20,7 @@ public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
   }
 
   @Override
-  public void run(@NotNull ProgressIndicator indicator) {
+  public void run(@NonNull ProgressIndicator indicator) {
     if (PluginManagerCore.isDisabled(PluginId.getId("org.jetbrains.plugins.github"))) {
       return;
     }

@@ -1,7 +1,5 @@
 package com.virtuslab.gitmachete.frontend.actions.backgroundables;
 
-import java.util.ArrayList;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -11,6 +9,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
+import io.vavr.Value;
 import io.vavr.collection.List;
 import io.vavr.collection.Map;
 import io.vavr.control.Option;
@@ -77,7 +76,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
     }
   }
 
-  private ArrayList<GHPullRequestShort> loadShortPRs(GHPRListLoader ghprListLoader) {
+  private List<GHPullRequestShort> loadShortPRs(GHPRListLoader ghprListLoader) {
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
       @Override
@@ -97,13 +96,13 @@ public class GHPRLoaderImpl implements GHPRLoader {
         ghprListLoader.wait();
       }
     } catch (InterruptedException ignored) {}
-    return ghprListLoader.getLoadedData();
+    return List.ofAll(ghprListLoader.getLoadedData());
   }
 
-  private List<GHPullRequest> loadPRDetails(ArrayList<GHPullRequestShort> loadedData, GHPRDetailsService ghprDetailsService) {
+  private List<GHPullRequest> loadPRDetails(List<GHPullRequestShort> pullRequestShorts, GHPRDetailsService ghprDetailsService) {
     val progressIndicator = new EmptyProgressIndicator();
-    double prFraction = 0.8 / (loadedData.size() + 1);
-    return loadedData.stream()
+    double prFraction = 0.8 / (pullRequestShorts.size() + 1);
+    return pullRequestShorts.toStream()
         .map(x -> ghprDetailsService.loadDetails(progressIndicator, x)).map(x -> {
           indicator.setFraction(indicator.getFraction() + prFraction);
           if (indicator.isCanceled()) {
@@ -114,7 +113,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
           } catch (InterruptedException | ExecutionException e) {
             return Option.<GHPullRequest>none();
           }
-        }).filter(Option::isDefined).map(Option::get).collect(List.collector());
+        }).flatMap(Value::toStream).toList();
 
   }
 
@@ -148,8 +147,9 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
   private static @Nullable GithubApiRequestExecutor getRequestExecutor(Project project) {
     val account = getGithubAccount();
-    if (account == null)
+    if (account == null) {
       return null;
+    }
     String token = GHCompatibilityUtil.getOrRequestToken(account, project);
     if (token == null) {
       return null;
@@ -161,8 +161,9 @@ public class GHPRLoaderImpl implements GHPRLoader {
     val gitRepositoryProvider = project.getService(SelectedGitRepositoryProvider.class);
 
     val account = getGithubAccount();
-    if (account == null)
+    if (account == null) {
       return null;
+    }
 
     val selectedGitRepository = gitRepositoryProvider.getSelectedGitRepository();
     if (selectedGitRepository == null) {
@@ -181,10 +182,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
   }
 
   private static @Nullable GithubAccount getGithubAccount() {
-    Set<GithubAccount> accounts = GHAccountsUtil.getAccounts();
-    if (accounts.isEmpty()) {
-      return null;
-    }
-    return accounts.iterator().next();
+    val accounts = List.ofAll(GHAccountsUtil.getAccounts());
+    return accounts.headOption().getOrNull();
   }
 }
