@@ -62,8 +62,14 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
       indicator.setFraction(0.1);
       val shortPrs = loadShortPRs(ghprListLoader);
+      if (indicator.isCanceled()) {
+        return;
+      }
       indicator.setFraction(0.2);
       val pullRequests = loadPRDetails(shortPrs, ghprDetailsService);
+      if (indicator.isCanceled()) {
+        return;
+      }
       indicator.setFraction(0.9);
       writeBranchLayout(pullRequests);
     }
@@ -83,7 +89,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
       @Override
       public void onDataAdded(int i) {
-        if (ghprListLoader.canLoadMore()) {
+        if (ghprListLoader.canLoadMore() && !indicator.isCanceled()) {
           ghprListLoader.loadMore(false);
         } else {
           synchronized (ghprListLoader) {
@@ -103,8 +109,13 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
   private List<GHPullRequest> loadPRDetails(ArrayList<GHPullRequestShort> loadedData, GHPRDetailsService ghprDetailsService) {
     val progressIndicator = new EmptyProgressIndicator();
+    double prFraction = 0.8 / (loadedData.size() + 1);
     return loadedData.stream()
         .map(x -> ghprDetailsService.loadDetails(progressIndicator, x)).map(x -> {
+          indicator.setFraction(indicator.getFraction() + prFraction);
+          if (indicator.isCanceled()) {
+            return Option.<GHPullRequest>none();
+          }
           try {
             return Option.of(x.get());
           } catch (InterruptedException | ExecutionException e) {
@@ -132,6 +143,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
           return new BranchLayoutEntry(entry.getName(), annotation, entry.getChildren());
         });
 
+        indicator.setFraction(0.95);
         branchLayoutWriter.write(macheteFilePath, newBranchLayout, false);
 
       } catch (BranchLayoutException ignored) {}

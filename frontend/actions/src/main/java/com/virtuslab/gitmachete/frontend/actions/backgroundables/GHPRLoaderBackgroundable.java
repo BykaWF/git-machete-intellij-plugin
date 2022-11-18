@@ -14,7 +14,7 @@ public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
   private final Disposable disposable;
 
   public GHPRLoaderBackgroundable(Project project) {
-    super(project, "Loading github PRs", false);
+    super(project, "Loading github PRs", true);
     this.project = project;
     this.disposable = Disposer.newDisposable();
   }
