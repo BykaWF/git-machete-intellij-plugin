@@ -29,6 +29,7 @@ import com.virtuslab.binding.RuntimeBinding;
 import com.virtuslab.branchlayout.api.readwrite.IBranchLayoutWriter;
 import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositoryCache;
 import com.virtuslab.gitmachete.backend.api.IGitMacheteRepositorySnapshot;
+import com.virtuslab.gitmachete.frontend.actions.backgroundables.GHPRLoaderBackgroundable;
 import com.virtuslab.gitmachete.frontend.actions.base.BaseProjectDependentAction;
 import com.virtuslab.gitmachete.frontend.actions.dialogs.GraphTableDialog;
 import com.virtuslab.gitmachete.frontend.resourcebundles.GitMacheteBundle;
@@ -128,6 +129,7 @@ public class DiscoverAction extends BaseProjectDependentAction {
       @SneakyThrows
       public void run(ProgressIndicator indicator) {
         branchLayoutWriter.write(macheteFilePath, branchLayout, /* backupOldLayout */ true);
+        new GHPRLoaderBackgroundable(project).queue();
       }
 
       @Override
