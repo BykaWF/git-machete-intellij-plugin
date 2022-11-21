@@ -9,6 +9,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import com.virtuslab.qual.guieffect.UIThreadUnsafe;
+
 public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
   private final Project project;
   private final Disposable disposable;
@@ -19,13 +21,14 @@ public final class GHPRLoaderBackgroundable extends Task.Backgroundable {
     this.disposable = Disposer.newDisposable();
   }
 
+  @UIThreadUnsafe
   @Override
   public void run(@NonNull ProgressIndicator indicator) {
     if (PluginManagerCore.isDisabled(PluginId.getId("org.jetbrains.plugins.github"))) {
       return;
     }
     try {
-      GHPRLoader loader = new GHPRLoaderImpl(project, disposable, indicator);
+      IGHPRLoader loader = new GHPRLoaderImpl(project, disposable, indicator);
       loader.run();
     } catch (NoClassDefFoundError ignored) {} //safeguard if someone enables GitHub plugin during runtime
   }

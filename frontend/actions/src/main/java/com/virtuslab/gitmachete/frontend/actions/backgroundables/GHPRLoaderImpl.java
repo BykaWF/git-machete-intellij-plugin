@@ -9,6 +9,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.util.concurrency.Semaphore;
 import io.vavr.Value;
 import io.vavr.collection.List;
 import io.vavr.collection.Map;
@@ -38,8 +39,9 @@ import com.virtuslab.branchlayout.api.readwrite.IBranchLayoutWriter;
 import com.virtuslab.gitmachete.frontend.ui.providerservice.GraphTableProvider;
 import com.virtuslab.gitmachete.frontend.ui.providerservice.SelectedGitRepositoryProvider;
 import com.virtuslab.gitmachete.frontend.vfsutils.GitVfsUtils;
+import com.virtuslab.qual.guieffect.UIThreadUnsafe;
 
-public class GHPRLoaderImpl implements GHPRLoader {
+public class GHPRLoaderImpl implements IGHPRLoader {
   private final Project project;
   private final Disposable disposable;
   private final ProgressIndicator indicator;
@@ -50,6 +52,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
     this.indicator = indicator;
   }
 
+  @UIThreadUnsafe
   @Override
   public void run() {
     indicator.setFraction(0.0);
@@ -76,8 +79,9 @@ public class GHPRLoaderImpl implements GHPRLoader {
     }
   }
 
+  @UIThreadUnsafe
   private List<GHPullRequestShort> loadShortPRs(GHPRListLoader ghprListLoader) {
-    final boolean[] finishedLoading = {false};
+    val semaphore = new Semaphore(1);
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
       @Override
@@ -85,24 +89,16 @@ public class GHPRLoaderImpl implements GHPRLoader {
         if (ghprListLoader.canLoadMore() && !indicator.isCanceled()) {
           ghprListLoader.loadMore(false);
         } else {
-          synchronized (finishedLoading) {
-            finishedLoading[0] = true;
-            finishedLoading.notify();
-          }
+          semaphore.up();
         }
       }
     });
     ghprListLoader.loadMore(false);
-    try {
-      synchronized (finishedLoading) {
-        if (!finishedLoading[0]) {
-          finishedLoading.wait();
-        }
-      }
-    } catch (InterruptedException ignored) {}
+    semaphore.waitFor();
     return List.ofAll(ghprListLoader.getLoadedData());
   }
 
+  @UIThreadUnsafe
   private List<GHPullRequest> loadPRDetails(List<GHPullRequestShort> pullRequestShorts, GHPRDetailsService ghprDetailsService) {
     val progressIndicator = new EmptyProgressIndicator();
     double prFraction = 0.8 / (pullRequestShorts.size() + 1);
@@ -121,6 +117,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
   }
 
+  @UIThreadUnsafe
   private void writeBranchLayout(List<GHPullRequest> pullRequests) {
     val repository = project.getService(SelectedGitRepositoryProvider.class).getSelectedGitRepository();
 
@@ -149,6 +146,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
 
   }
 
+  @UIThreadUnsafe
   private static @Nullable GithubApiRequestExecutor getRequestExecutor(Project project) {
     val account = getGithubAccount();
     if (account == null) {
@@ -161,6 +159,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
     return GithubApiRequestExecutor.Factory.getInstance().create(token);
   }
 
+  @UIThreadUnsafe
   private static @Nullable GHRepositoryCoordinates getRepositoryCoordinates(Project project) {
     val gitRepositoryProvider = project.getService(SelectedGitRepositoryProvider.class);
 
@@ -185,6 +184,7 @@ public class GHPRLoaderImpl implements GHPRLoader {
     return new GHRepositoryCoordinates(account.getServer(), repositoryPath);
   }
 
+  @UIThreadUnsafe
   private static @Nullable GithubAccount getGithubAccount() {
     val accounts = List.ofAll(GHAccountsUtil.getAccounts());
     return accounts.headOption().getOrNull();
