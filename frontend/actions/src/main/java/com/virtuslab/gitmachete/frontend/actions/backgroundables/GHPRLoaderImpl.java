@@ -66,14 +66,10 @@ public class GHPRLoaderImpl implements IGHPRLoader {
 
       indicator.setFraction(0.1);
       val shortPrs = loadShortPRs(ghprListLoader);
-      if (indicator.isCanceled()) {
-        return;
-      }
+      indicator.checkCanceled();
       indicator.setFraction(0.2);
       val pullRequests = loadPRDetails(shortPrs, ghprDetailsService);
-      if (indicator.isCanceled()) {
-        return;
-      }
+      indicator.checkCanceled();
       indicator.setFraction(0.9);
       writeBranchLayout(pullRequests);
     }
@@ -104,10 +100,8 @@ public class GHPRLoaderImpl implements IGHPRLoader {
     double prFraction = 0.8 / (pullRequestShorts.size() + 1);
     return pullRequestShorts.toStream()
         .map(x -> ghprDetailsService.loadDetails(progressIndicator, x)).map(x -> {
+          indicator.checkCanceled();
           indicator.setFraction(indicator.getFraction() + prFraction);
-          if (indicator.isCanceled()) {
-            return Option.<GHPullRequest>none();
-          }
           try {
             return Option.of(x.get());
           } catch (InterruptedException | ExecutionException e) {
@@ -135,7 +129,7 @@ public class GHPRLoaderImpl implements IGHPRLoader {
           }
           return new BranchLayoutEntry(entry.getName(), annotation, entry.getChildren());
         });
-
+        indicator.checkCanceled();
         indicator.setFraction(0.95);
         branchLayoutWriter.write(macheteFilePath, newBranchLayout, false);
 
