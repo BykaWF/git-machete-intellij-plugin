@@ -82,8 +82,7 @@ public class GHPRLoaderImpl implements IGHPRLoader {
     val semaphore = new Semaphore(1);
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
-      //These empty overrides are needed for plugin compatibility checker
-      //Remove when min version > 2022.3
+      //Remove when min version >= 2022.3
       @Override
       public void onAllDataRemoved() {}
 
@@ -164,7 +163,7 @@ public class GHPRLoaderImpl implements IGHPRLoader {
       return null;
     }
     val factory = GithubApiRequestExecutor.Factory.getInstance();
-    try {
+    try { //Remove when min version >= 2022.3
       val method = factory.getClass().getMethod("create", String.class);
       return (GithubApiRequestExecutor) method.invoke(factory, token);
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
