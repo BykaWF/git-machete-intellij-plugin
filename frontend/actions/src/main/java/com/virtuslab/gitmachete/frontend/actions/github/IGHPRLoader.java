@@ -1,4 +1,4 @@
-package com.virtuslab.gitmachete.frontend.actions.backgroundables;
+package com.virtuslab.gitmachete.frontend.actions.github;
 
 import com.virtuslab.qual.guieffect.UIThreadUnsafe;
 

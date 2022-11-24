@@ -120,6 +120,8 @@ fun Project.configureIntellijPlugin() {
       intellijVersions.eapOfLatestSupportedMajor?.replace("-EAP-(CANDIDATE-)?SNAPSHOT".toRegex(), "")
     )
 
+    externalPrefixes.value(listOf("org.jetbrains.plugins.github"))
+
     ideVersions.set(
       intellijVersions.latestMinorsOfOldSupportedMajors +
         intellijVersions.latestStable +

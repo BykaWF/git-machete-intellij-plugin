@@ -1,5 +1,6 @@
-package com.virtuslab.gitmachete.frontend.actions.backgroundables;
+package com.virtuslab.gitmachete.frontend.actions.github;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -16,6 +17,7 @@ import io.vavr.collection.Map;
 import io.vavr.control.Option;
 import lombok.val;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.github.api.GHRepositoryCoordinates;
 import org.jetbrains.plugins.github.api.GithubApiRequestExecutor;
 import org.jetbrains.plugins.github.api.data.pullrequest.GHPullRequest;
@@ -80,6 +82,17 @@ public class GHPRLoaderImpl implements IGHPRLoader {
     val semaphore = new Semaphore(1);
     ghprListLoader.setSearchQuery(GHPRListSearchValue.Companion.getDEFAULT().toQuery());
     ghprListLoader.addDataListener(disposable, new GHListLoader.ListDataListener() {
+      //These empty overrides are needed for plugin compatibility checker
+      //Remove when min version > 2022.3
+      @Override
+      public void onAllDataRemoved() {}
+
+      @Override
+      public void onDataRemoved(@NotNull Object data) {}
+
+      @Override
+      public void onDataUpdated(int idx) {}
+
       @Override
       public void onDataAdded(int i) {
         if (ghprListLoader.canLoadMore() && !indicator.isCanceled()) {
@@ -150,7 +163,13 @@ public class GHPRLoaderImpl implements IGHPRLoader {
     if (token == null) {
       return null;
     }
-    return GithubApiRequestExecutor.Factory.getInstance().create(token);
+    val factory = GithubApiRequestExecutor.Factory.getInstance();
+    try {
+      val method = factory.getClass().getMethod("create", String.class);
+      return (GithubApiRequestExecutor) method.invoke(factory, token);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      return null;
+    }
   }
 
   @UIThreadUnsafe

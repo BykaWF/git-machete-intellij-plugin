@@ -1,4 +1,4 @@
-package com.virtuslab.gitmachete.frontend.actions.backgroundables;
+package com.virtuslab.gitmachete.frontend.actions.github;
 
 import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.Disposable;

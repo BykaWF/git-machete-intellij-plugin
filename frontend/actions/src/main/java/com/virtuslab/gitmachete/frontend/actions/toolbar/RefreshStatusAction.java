@@ -6,8 +6,8 @@ import kr.pe.kwonnam.slf4jlambda.LambdaLogger;
 import lombok.CustomLog;
 import org.checkerframework.checker.guieffect.qual.UIEffect;
 
-import com.virtuslab.gitmachete.frontend.actions.backgroundables.GHPRLoaderBackgroundable;
 import com.virtuslab.gitmachete.frontend.actions.base.BaseProjectDependentAction;
+import com.virtuslab.gitmachete.frontend.actions.github.GHPRLoaderBackgroundable;
 
 @CustomLog
 public class RefreshStatusAction extends BaseProjectDependentAction {
