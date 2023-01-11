@@ -74,6 +74,17 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
   @ContinuesInBackground
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     val slideOutBranchIsCurrent = branchToSlideOutName.equals(currentBranchNameIfManaged);
     if (slideOutBranchIsCurrent) {
       LOG.debug("Skipping (optional) local branch deletion because it is equal to current branch");
@@ -104,12 +115,32 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
   @ContinuesInBackground
   @UIEffect
   private void suggestBranchDeletion(String branchName, @UI Runnable doInUIThreadWhenBranchDeletionReady) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     val slideOutOptions = new DeleteBranchOnSlideOutSuggestionDialog(project, branchName).showAndGetSlideOutOptions();
 
     new Task.Backgroundable(project, getString("action.GitMachete.BaseSlideOutAction.task.title")) {
       @Override
       @UIThreadUnsafe
       public void run(ProgressIndicator indicator) {
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+            System.out.println("Expected non-EDT:");
+            System.out.println(stackTrace);
+            throw new RuntimeException("Expected EDT: " + stackTrace);
+          }
+        }
         if (slideOutOptions != null) {
           handleBranchDeletionDecision(branchName, slideOutOptions.shouldDelete());
 
@@ -128,6 +159,15 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
       @Override
       @UIEffect
       public void onSuccess() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          System.out.println("Expected EDT:");
+          System.out.println(stackTrace);
+          throw new RuntimeException("Expected EDT: " + stackTrace);
+        }
         doInUIThreadWhenBranchDeletionReady.run();
       }
     }.queue();
@@ -135,6 +175,17 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private void handleBranchDeletionDecision(String branchName, boolean shouldDelete) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     slideOutBranch(branchName);
     if (shouldDelete) {
       GitBrancher.getInstance(project).deleteBranch(branchName, Collections.singletonList(gitRepository));
@@ -181,6 +232,17 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private @Nullable Boolean getDeleteLocalBranchOnSlideOutGitConfigValue(VirtualFile root) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     try {
       val value = GitConfigUtil.getValue(project, root, DELETE_LOCAL_BRANCH_ON_SLIDE_OUT_GIT_CONFIG_KEY);
       if (value != null) {
@@ -197,6 +259,17 @@ public class SlideOutBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private void setDeleteLocalBranchOnSlideOutGitConfigValue(VirtualFile root, String value) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     try {
       val additionalParameters = "--local";
       GitConfigUtil.setValue(project, root, DELETE_LOCAL_BRANCH_ON_SLIDE_OUT_GIT_CONFIG_KEY, value, additionalParameters);

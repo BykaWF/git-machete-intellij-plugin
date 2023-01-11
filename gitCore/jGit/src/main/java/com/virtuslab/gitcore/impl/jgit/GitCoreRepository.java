@@ -224,6 +224,17 @@ public final class GitCoreRepository implements IGitCoreRepository {
   @UIThreadUnsafe
   @Override
   public IGitCoreHeadSnapshot deriveHead() throws GitCoreException {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     try {
       Ref ref = jgitRepoForWorktreeGitDir.getRefDatabase().findRef(Constants.HEAD);
 
@@ -373,6 +384,17 @@ public final class GitCoreRepository implements IGitCoreRepository {
   @UIThreadUnsafe
   @Override
   public @Nullable String deriveRebasedBranch() throws GitCoreException {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     Option<Path> headNamePath = Stream.of("rebase-apply", "rebase-merge")
         .map(dir -> jgitRepoForWorktreeGitDir.getDirectory().toPath().resolve(dir).resolve("head-name"))
         .find(path -> path.toFile().isFile());
@@ -391,6 +413,17 @@ public final class GitCoreRepository implements IGitCoreRepository {
   @UIThreadUnsafe
   @Override
   public @Nullable String deriveBisectedBranch() throws GitCoreException {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     Path headNamePath = jgitRepoForWorktreeGitDir.getDirectory().toPath().resolve("BISECT_START");
 
     try {

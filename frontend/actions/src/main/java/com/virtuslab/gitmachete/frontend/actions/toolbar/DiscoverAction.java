@@ -55,6 +55,15 @@ public class DiscoverAction extends BaseProjectDependentAction {
   @IgnoreUIThreadUnsafeCalls("com.virtuslab.gitmachete.backend.api.IGitMacheteRepository.discoverLayoutAndCreateSnapshot()")
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     val project = getProject(anActionEvent);
     val selectedRepoService = project.getService(SelectedGitRepositoryService.class)
         .getGitRepositorySelectionProvider();
@@ -116,6 +125,15 @@ public class DiscoverAction extends BaseProjectDependentAction {
 
   @UIEffect
   private static void openMacheteFile(GitRepository gitRepository) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     val project = gitRepository.getProject();
     val file = gitRepository.getMacheteFile();
     if (file != null) {
@@ -142,6 +160,17 @@ public class DiscoverAction extends BaseProjectDependentAction {
       @Override
       @SneakyThrows
       public void run(ProgressIndicator indicator) {
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+            System.out.println("Expected non-EDT:");
+            System.out.println(stackTrace);
+            throw new RuntimeException("Expected EDT: " + stackTrace);
+          }
+        }
         runWriteActionOnUIThread(() -> MacheteFileWriter.writeBranchLayout(
             macheteFilePath,
             branchLayoutWriter,
@@ -153,6 +182,15 @@ public class DiscoverAction extends BaseProjectDependentAction {
       @Override
       @UIEffect
       public void onSuccess() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          System.out.println("Expected EDT:");
+          System.out.println(stackTrace);
+          throw new RuntimeException("Expected EDT: " + stackTrace);
+        }
         baseEnhancedGraphTable.queueRepositoryUpdateAndModelRefresh();
         VfsUtil.markDirtyAndRefresh(/* async */ false, /* recursive */ true, /* reloadChildren */ false,
             ProjectRootManager.getInstance(project).getContentRoots());
@@ -162,6 +200,15 @@ public class DiscoverAction extends BaseProjectDependentAction {
       @Override
       @UIEffect
       public void onThrowable(Throwable e) {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          System.out.println("Expected EDT:");
+          System.out.println(stackTrace);
+          throw new RuntimeException("Expected EDT: " + stackTrace);
+        }
         VcsNotifier.getInstance(project).notifyError(
             /* displayId */ null,
             /* title */ getString("action.GitMachete.DiscoverAction.notification.title.write-file-error"),

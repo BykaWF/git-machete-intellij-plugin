@@ -57,6 +57,17 @@ public class RebaseOnParentBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private @Nullable GitRebaseOption getAvailableGitRebaseOptions(String optionText, GitVersion gitVersion) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     val maybeEmptyDropEntry = Arrays.stream(GitRebaseOption.values())
         .filter(entry -> entry.getOption(gitVersion).equals(optionText)).findFirst();
 
@@ -65,6 +76,17 @@ public class RebaseOnParentBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private GitRebaseParams getIdeaRebaseParamsOf(GitRepository repository, IGitRebaseParameters gitRebaseParams) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     val gitVersion = repository.getVcs().getVersion();
     val currentBranchName = gitRebaseParams.getCurrentBranch().getName();
     val newBaseBranchFullName = gitRebaseParams.getNewBaseBranch().getFullName();
@@ -86,6 +108,17 @@ public class RebaseOnParentBackgroundable extends Task.Backgroundable {
   @Override
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     val project = gitRepository.getProject();
     IGitRebaseParameters gitRebaseParameters;
     try {

@@ -54,6 +54,17 @@ public abstract class BaseSlideInBackgroundable extends Task.Backgroundable {
   @Override
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     preSlideInRunnable.run();
 
     // `preSlideInRunnable` may perform some sneakily-asynchronous operations (e.g. checkoutRemoteBranch).
@@ -100,6 +111,15 @@ public abstract class BaseSlideInBackgroundable extends Task.Backgroundable {
   @Override
   @UIEffect
   public void onThrowable(Throwable e) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     val exceptionMessage = e.getMessage();
     VcsNotifier.getInstance(project).notifyError(/* displayId */ null,
         /* title */ getString(
@@ -111,11 +131,33 @@ public abstract class BaseSlideInBackgroundable extends Task.Backgroundable {
 
   @UIThreadUnsafe
   private @Nullable GitLocalBranch findLocalBranch() {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     return gitRepository.getBranches().findLocalBranch(slideInOptions.getName());
   }
 
   @UIThreadUnsafe
   private void waitForCreationOfLocalBranch() {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     try {
       // Usually just 3 attempts are enough
       val MAX_SLEEP_DURATION = 8192;

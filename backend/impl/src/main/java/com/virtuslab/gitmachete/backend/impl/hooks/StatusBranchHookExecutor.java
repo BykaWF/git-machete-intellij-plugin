@@ -119,6 +119,17 @@ public final class StatusBranchHookExecutor extends BaseHookExecutor {
 
   @UIThreadUnsafe
   public static String hashFile(String algorithm, File f) throws IOException, NoSuchAlgorithmException {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     MessageDigest md = MessageDigest.getInstance(algorithm);
 
     try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));
@@ -131,6 +142,17 @@ public final class StatusBranchHookExecutor extends BaseHookExecutor {
 
   @UIThreadUnsafe
   public @Nullable String deriveHookOutputFor(String branchName, CommitOfManagedBranch pointedCommit) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     var hookContentMD5Hash = "";
     try {
       hookContentMD5Hash = hashFile("MD5", hookFile);

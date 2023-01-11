@@ -36,6 +36,17 @@ public class CheckRemoteBranchBackgroundable extends Task.Backgroundable {
   @SneakyThrows
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     GitBranch targetBranch = gitRepository.getBranches().findBranchByName(remoteBranchName);
     if (targetBranch == null) {
       throw new GitMacheteException(
@@ -46,6 +57,15 @@ public class CheckRemoteBranchBackgroundable extends Task.Backgroundable {
   @Override
   @UIEffect
   public void onThrowable(Throwable error) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     String errorMessage = error.getMessage();
     if (errorMessage != null) {
       VcsNotifier.getInstance(gitRepository.getProject()).notifyError(

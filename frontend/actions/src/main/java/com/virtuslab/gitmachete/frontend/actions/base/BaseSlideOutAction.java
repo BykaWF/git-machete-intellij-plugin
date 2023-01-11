@@ -25,6 +25,15 @@ public abstract class BaseSlideOutAction extends BaseGitMacheteRepositoryReadyAc
   @Override
   @UIEffect
   protected void onUpdate(AnActionEvent anActionEvent) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     super.onUpdate(anActionEvent);
 
     val presentation = anActionEvent.getPresentation();
@@ -51,6 +60,15 @@ public abstract class BaseSlideOutAction extends BaseGitMacheteRepositoryReadyAc
   @ContinuesInBackground
   @UIEffect
   public void actionPerformed(AnActionEvent anActionEvent) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     log().debug("Performing");
 
     val branchName = getNameOfBranchUnderAction(anActionEvent);
@@ -63,6 +81,15 @@ public abstract class BaseSlideOutAction extends BaseGitMacheteRepositoryReadyAc
   @ContinuesInBackground
   @UIEffect
   private void doSlideOut(AnActionEvent anActionEvent, IManagedBranchSnapshot branchToSlideOut) {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     log().debug(() -> "Entering: branchToSlideOut = ${branchToSlideOut}");
     log().debug("Refreshing repository state");
 

@@ -53,6 +53,17 @@ public class FastForwardMergeBackgroundable extends CheckRemoteBranchBackgrounda
   @ContinuesInBackground
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     super.run(indicator);
 
     val currentBranchName = Option.of(gitRepository.getCurrentBranch()).map(GitReference::getName).getOrNull();
@@ -73,6 +84,15 @@ public class FastForwardMergeBackgroundable extends CheckRemoteBranchBackgrounda
       @Override
       @UIEffect
       public void onSuccess() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          System.out.println("Expected EDT:");
+          System.out.println(stackTrace);
+          throw new RuntimeException("Expected EDT: " + stackTrace);
+        }
         super.onSuccess();
 
         doInUIThreadWhenReady.run();
@@ -101,6 +121,15 @@ public class FastForwardMergeBackgroundable extends CheckRemoteBranchBackgrounda
       @Override
       @UIEffect
       public void onSuccess() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+          var sw = new java.io.StringWriter();
+          var pw = new java.io.PrintWriter(sw);
+          new Exception().printStackTrace(pw);
+          String stackTrace = sw.toString();
+          System.out.println("Expected EDT:");
+          System.out.println(stackTrace);
+          throw new RuntimeException("Expected EDT: " + stackTrace);
+        }
         super.onSuccess();
 
         doInUIThreadWhenReady.run();

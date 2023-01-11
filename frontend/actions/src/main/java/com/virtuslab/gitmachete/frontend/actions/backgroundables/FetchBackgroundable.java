@@ -45,6 +45,17 @@ public class FetchBackgroundable extends Task.Backgroundable {
   @Override
   @UIThreadUnsafe
   public void run(ProgressIndicator indicator) {
+    if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      if (!stackTrace.contains("at com.virtuslab.gitmachete.frontend.actions.toolbar.DiscoverAction.actionPerformed")) {
+        System.out.println("Expected non-EDT:");
+        System.out.println(stackTrace);
+        throw new RuntimeException("Expected EDT: " + stackTrace);
+      }
+    }
     val fetchSupport = GitFetchSupport.fetchSupport(gitRepository.getProject());
     GitRemote remote = remoteName.equals(LOCAL_REPOSITORY_NAME)
         ? GitRemote.DOT
@@ -66,6 +77,15 @@ public class FetchBackgroundable extends Task.Backgroundable {
   @UIEffect
   @Override
   public void onSuccess() {
+    if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+      var sw = new java.io.StringWriter();
+      var pw = new java.io.PrintWriter(sw);
+      new Exception().printStackTrace(pw);
+      String stackTrace = sw.toString();
+      System.out.println("Expected EDT:");
+      System.out.println(stackTrace);
+      throw new RuntimeException("Expected EDT: " + stackTrace);
+    }
     VcsNotifier.getInstance(gitRepository.getProject()).notifySuccess(/* displayId */ null, /* title */ "",
         successNotificationText);
   }
