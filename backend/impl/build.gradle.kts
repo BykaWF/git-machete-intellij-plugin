@@ -14,9 +14,10 @@ dependencies {
 
 commonsIO()
 jcabiAspects()
-junit()
+junit5()
+junit5Params()
 lombok()
-powerMock()
+powerMock5()
 slf4jLambdaApi()
 slf4jTestImpl()
 vavr()
