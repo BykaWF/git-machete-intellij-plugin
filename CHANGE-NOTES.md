@@ -1,6 +1,7 @@
 # Changelog
 
 ## v3.6.1
+- Fixed: in case of red edge from branch to its parent, the unique history of a branch never includes commits reachable from its parent.
 
 ## v3.6.0
 - Improved the repository selection combobox so that modules are now searchable.
